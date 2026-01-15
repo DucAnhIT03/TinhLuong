@@ -1,0 +1,55 @@
+.salary-input-container {
+  margin-bottom: 22px;
+}
+
+.salary-input-label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 500;
+  color: #333;
+  font-size: 15px;
+}
+
+.salary-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0 15px;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+
+.salary-input-wrapper:focus-within {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.salary-input-icon {
+  margin-right: 10px;
+  color: #666;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.salary-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 14px 0;
+  font-size: 16px;
+  background: transparent;
+  color: #333;
+}
+
+.salary-input::placeholder {
+  color: #bbb;
+}
+
+.salary-input-placeholder {
+  color: #999;
+  font-size: 14px;
+  margin-left: 10px;
+  flex-shrink: 0;
+}

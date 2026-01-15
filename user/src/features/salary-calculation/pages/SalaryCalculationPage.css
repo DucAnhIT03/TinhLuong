@@ -1,0 +1,324 @@
+.salary-calculation-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 30px 20px;
+}
+
+.salary-calculation-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #212121;
+  margin-bottom: 35px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.regulation-section {
+  margin-bottom: 20px;
+}
+
+.regulation-info {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 6px;
+  margin-bottom: 25px;
+  border-left: 4px solid #4caf50;
+}
+
+.regulation-info p {
+  margin: 10px 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #555;
+}
+
+.regulation-warning {
+  color: #d32f2f !important;
+  font-weight: 600;
+  margin-top: 15px !important;
+  padding: 12px;
+  background: #ffebee;
+  border-radius: 4px;
+  border-left: 3px solid #d32f2f;
+}
+
+.fixed-info-section {
+  background: #e8f5e9;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+}
+
+.fixed-info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #c8e6c9;
+}
+
+.fixed-info-item:last-child {
+  border-bottom: none;
+}
+
+.fixed-info-label {
+  font-weight: 500;
+  color: #2e7d32;
+}
+
+.fixed-info-value {
+  font-weight: 600;
+  color: #1b5e20;
+}
+
+.input-section {
+  margin-bottom: 25px;
+}
+
+.input-row {
+  display: flex;
+  gap: 20px;
+}
+
+.input-row .salary-input-container {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.insurance-section,
+.region-section {
+  margin-bottom: 25px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 20px;
+  margin-top: 35px;
+  margin-bottom: 30px;
+}
+
+.calculate-button {
+  flex: 1;
+  padding: 18px 28px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.calculate-button.gross-to-net {
+  border: none;
+  color: #fff;
+  background: #4caf50;
+}
+
+.calculate-button.gross-to-net:hover {
+  background: #45a049;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.calculate-button.gross-to-net:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+}
+
+.calculate-button.net-to-gross {
+  border: 2px solid #4caf50;
+  color: #4caf50;
+  background: #fff;
+}
+
+.calculate-button.net-to-gross:hover {
+  background: #f5f5f5;
+  border-color: #45a049;
+  color: #45a049;
+}
+
+.calculate-button.net-to-gross:active {
+  transform: scale(0.98);
+}
+
+.result-section {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.result-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2e7d32;
+  margin-bottom: 15px;
+}
+
+.result-summary,
+.result-detailed,
+.result-tax-details,
+.result-employer {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.summary-table-horizontal {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.summary-cell {
+  background: #fff;
+  padding: 15px;
+  border-radius: 4px;
+  text-align: center;
+  border: 1px solid #e0e0e0;
+}
+
+.summary-cell-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.summary-cell-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2e7d32;
+}
+
+.summary-cell-value.negative {
+  color: #d32f2f;
+}
+
+.summary-table,
+.detailed-table,
+.employer-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summary-row,
+.detailed-row,
+.employer-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: #fff;
+  border-radius: 4px;
+}
+
+.detailed-row.highlight {
+  background: transparent;
+  font-weight: 600;
+}
+
+.detailed-row.highlight .detailed-label {
+  font-weight: 600;
+}
+
+.detailed-row.highlight.net-salary {
+  background: transparent;
+}
+
+.detailed-row.highlight.net-salary .detailed-label,
+.detailed-row.highlight.net-salary .detailed-value {
+  color: #2e7d32;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.summary-row:last-child,
+.employer-row.total {
+  background: #e0e0e0;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.summary-label,
+.detailed-label,
+.employer-label {
+  font-weight: 500;
+  color: #555;
+}
+
+.summary-value,
+.detailed-value,
+.employer-value {
+  font-weight: 600;
+  color: #2e7d32;
+  font-size: 15px;
+}
+
+.summary-value.negative,
+.detailed-value.negative {
+  color: #d32f2f;
+}
+
+.detailed-note {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+}
+
+.tax-table {
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.tax-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr 1.5fr;
+  background: #d7ccc8;
+  color: #333;
+  font-weight: 600;
+  padding: 12px;
+}
+
+.tax-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr 1.5fr;
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tax-table-row:last-child {
+  border-bottom: none;
+}
+
+.tax-header-cell,
+.tax-cell {
+  padding: 4px;
+  font-size: 14px;
+}
+
+.tax-cell {
+  color: #333;
+}
+
+.radio-option input[type="radio"]:checked + .radio-label {
+  color: #4caf50;
+  font-weight: 600;
+}
+
+.radio-option input[type="radio"]:checked {
+  accent-color: #4caf50;
+}
