@@ -19,6 +19,14 @@ export const INSURANCE_RATES = {
 
 export const MAX_SOCIAL_INSURANCE_SALARY = BASE_SALARY * 20;
 
+export const TAX_BRACKETS = [
+  { min: 0, max: 10_000_000, rate: 0.05 },
+  { min: 10_000_000, max: 30_000_000, rate: 0.1 },
+  { min: 30_000_000, max: 60_000_000, rate: 0.2 },
+  { min: 60_000_000, max: 100_000_000, rate: 0.3 },
+  { min: 100_000_000, max: Infinity, rate: 0.35 },
+];
+
 export const REGULATIONS = {
   FROM_2025_07_01: {
     label: 'Từ 01/07/2025 - 31/12/2025',
