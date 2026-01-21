@@ -1,28 +1,47 @@
-import React, { useState } from 'react';
-import { calculateGrossToNet, calculateNetToGross, formatCurrency } from '../../../shared/utils/salary.utils.js';
-import {
-  BASE_SALARY,
-  PERSONAL_DEDUCTION,
-  DEPENDENT_DEDUCTION,
-  REGIONAL_MINIMUM_WAGE,
-  REGULATIONS,
-  REGIONS,
-} from '../../../shared/constants/salary.constants.js';
+import React, { useEffect, useState } from 'react';
+import { formatCurrency } from '../../../shared/utils/salary.utils.js';
 import SalaryInput from '../components/SalaryInput.jsx';
 import RadioGroup from '../components/RadioGroup.jsx';
+import { salaryApi } from '../../../services/salaryApi.js';
 import './SalaryCalculationPage.css';
 
 const SalaryCalculationPage = () => {
-  const [regulation, setRegulation] = useState(REGULATIONS.FROM_2026_01_01.value);
+  const [meta, setMeta] = useState(null);
+  const [metaLoading, setMetaLoading] = useState(true);
+  const [regulation, setRegulation] = useState('');
   const [income, setIncome] = useState('');
   const [dependents, setDependents] = useState('');
   const [insuranceType, setInsuranceType] = useState('official');
   const [customInsuranceSalary, setCustomInsuranceSalary] = useState('');
-  const [region, setRegion] = useState('I');
+  const [region, setRegion] = useState('');
   const [calculationResult, setCalculationResult] = useState(null);
   const [calculationType, setCalculationType] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleCalculateGrossToNet = () => {
+  useEffect(() => {
+    const loadMeta = async () => {
+      try {
+        setMetaLoading(true);
+        const data = await salaryApi.getMeta();
+        setMeta(data);
+        const defaultReg = data?.regulations?.FROM_2026_01_01?.value
+          ?? Object.values(data?.regulations || {})[0]?.value
+          ?? '';
+        const defaultRegion = data?.regions?.[0] ?? '';
+        setRegulation(defaultReg);
+        setRegion(defaultRegion);
+      } catch (err) {
+        setError(err?.message || 'Không tải được cấu hình lương');
+      } finally {
+        setMetaLoading(false);
+      }
+    };
+
+    loadMeta();
+  }, []);
+
+  const handleCalculateGrossToNet = async () => {
     const grossValue = parseFloat(income) || 0;
     const dependentsCount = parseInt(dependents) || 0;
     const insuranceSalaryValue = insuranceType === 'official' 
@@ -34,12 +53,26 @@ const SalaryCalculationPage = () => {
       return;
     }
 
-    const result = calculateGrossToNet(grossValue, insuranceSalaryValue, dependentsCount);
-    setCalculationResult(result);
-    setCalculationType('gross-to-net');
+    try {
+      setLoading(true);
+      setError('');
+      const result = await salaryApi.calculateGrossToNet({
+        grossSalary: grossValue,
+        insuranceSalary: insuranceSalaryValue,
+        dependents: dependentsCount,
+        regulation,
+        region,
+      });
+      setCalculationResult(result);
+      setCalculationType('gross-to-net');
+    } catch (err) {
+      setError(err?.message || 'Không thể tính toán. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCalculateNetToGross = () => {
+  const handleCalculateNetToGross = async () => {
     const netValue = parseFloat(income) || 0;
     const dependentsCount = parseInt(dependents) || 0;
     const useGrossAsInsuranceBase = insuranceType === 'official';
@@ -57,9 +90,24 @@ const SalaryCalculationPage = () => {
       return;
     }
 
-    const result = calculateNetToGross(netValue, insuranceSalaryValue, dependentsCount, useGrossAsInsuranceBase);
-    setCalculationResult(result);
-    setCalculationType('net-to-gross');
+    try {
+      setLoading(true);
+      setError('');
+      const result = await salaryApi.calculateNetToGross({
+        netSalary: netValue,
+        insuranceSalary: insuranceSalaryValue,
+        dependents: dependentsCount,
+        useGrossAsInsuranceBase,
+        regulation,
+        region,
+      });
+      setCalculationResult(result);
+      setCalculationType('net-to-gross');
+    } catch (err) {
+      setError(err?.message || 'Không thể tính toán. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleIncomeChange = (e) => {
@@ -72,7 +120,8 @@ const SalaryCalculationPage = () => {
   };
 
   const handleCustomInsuranceChange = (e) => {
-    setCustomInsuranceSalary(e.target.value);
+    const rawValue = e.target.value.replace(/[^\d]/g, '');
+    setCustomInsuranceSalary(rawValue);
   };
 
   return (
@@ -82,18 +131,26 @@ const SalaryCalculationPage = () => {
           Công cụ tính lương Gross sang Net và ngược lại [Chuẩn 2026]
         </h1>
 
-        <div className="regulation-section">
-          <RadioGroup
-            label="Áp dụng quy định:"
-            name="regulation"
-            options={[
-              { label: REGULATIONS.FROM_2025_07_01.label, value: REGULATIONS.FROM_2025_07_01.value },
-              { label: REGULATIONS.FROM_2026_01_01.label, value: REGULATIONS.FROM_2026_01_01.value },
-            ]}
-            value={regulation}
-            onChange={(e) => setRegulation(e.target.value)}
-          />
-        </div>
+        {metaLoading && <div className="regulation-warning">Đang tải cấu hình lương...</div>}
+        {!metaLoading && !meta && (
+          <div className="regulation-warning">Không tải được cấu hình lương. Vui lòng thử lại.</div>
+        )}
+        {error && <div className="regulation-warning">{error}</div>}
+
+        {meta && (
+          <div className="regulation-section">
+            <RadioGroup
+              label="Áp dụng quy định:"
+              name="regulation"
+              options={Object.values(meta.regulations || {}).map((r) => ({
+                label: r.label,
+                value: r.value,
+              }))}
+              value={regulation}
+              onChange={(e) => setRegulation(e.target.value)}
+            />
+          </div>
+        )}
 
         <div className="regulation-info">
           <p>
@@ -110,20 +167,22 @@ const SalaryCalculationPage = () => {
           </p>
         </div>
 
-        <div className="fixed-info-section">
-          <div className="fixed-info-item">
-            <span className="fixed-info-label">Lương cơ sở:</span>
-            <span className="fixed-info-value">{formatCurrency(BASE_SALARY)}₫</span>
+        {meta && (
+          <div className="fixed-info-section">
+            <div className="fixed-info-item">
+              <span className="fixed-info-label">Lương cơ sở:</span>
+              <span className="fixed-info-value">{formatCurrency(meta.baseSalary)}₫</span>
+            </div>
+            <div className="fixed-info-item">
+              <span className="fixed-info-label">Giảm trừ gia cảnh bản thân:</span>
+              <span className="fixed-info-value">{formatCurrency(meta.personalDeduction)}₫</span>
+            </div>
+            <div className="fixed-info-item">
+              <span className="fixed-info-label">Người phụ thuộc:</span>
+              <span className="fixed-info-value">{formatCurrency(meta.dependentDeduction)}₫</span>
+            </div>
           </div>
-          <div className="fixed-info-item">
-            <span className="fixed-info-label">Giảm trừ gia cảnh bản thân:</span>
-            <span className="fixed-info-value">{formatCurrency(PERSONAL_DEDUCTION)}₫</span>
-          </div>
-          <div className="fixed-info-item">
-            <span className="fixed-info-label">Người phụ thuộc:</span>
-            <span className="fixed-info-value">{formatCurrency(DEPENDENT_DEDUCTION)}₫</span>
-          </div>
-        </div>
+        )}
 
         <div className="input-section">
           <div className="input-row">
@@ -158,7 +217,7 @@ const SalaryCalculationPage = () => {
                 value: 'custom',
                 input: {
                   placeholder: '(VNĐ)',
-                  value: customInsuranceSalary,
+                  value: customInsuranceSalary ? formatCurrency(customInsuranceSalary) : '',
                   onChange: handleCustomInsuranceChange,
                 },
               },
@@ -168,25 +227,32 @@ const SalaryCalculationPage = () => {
           />
         </div>
 
-        <div className="region-section">
-          <RadioGroup
-            label="Vùng: (Giải thích)"
-            name="region"
-            horizontal={true}
-            options={REGIONS.map((r) => ({
-              label: r,
-              value: r,
-            }))}
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-          />
-        </div>
+        {meta && (
+          <div className="region-section">
+            <RadioGroup
+              label="Vùng: (Giải thích)"
+              name="region"
+              horizontal={true}
+              options={(meta.regions || []).map((r) => ({ label: r, value: r }))}
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+            />
+          </div>
+        )}
 
         <div className="action-buttons">
-          <button className="calculate-button gross-to-net" onClick={handleCalculateGrossToNet}>
+          <button
+            className="calculate-button gross-to-net"
+            onClick={handleCalculateGrossToNet}
+            disabled={loading || metaLoading || !meta}
+          >
             GROSS → NET
           </button>
-          <button className="calculate-button net-to-gross" onClick={handleCalculateNetToGross}>
+          <button
+            className="calculate-button net-to-gross"
+            onClick={handleCalculateNetToGross}
+            disabled={loading || metaLoading || !meta}
+          >
             NET → GROSS
           </button>
         </div>

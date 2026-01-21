@@ -22,14 +22,17 @@ const RadioGroup = ({ label, options, value, onChange, name, horizontal = false 
               />
               <span className="radio-label">{option.label}</span>
               {option.input && (
-                <input
-                  type="text"
-                  className="radio-input"
-                  placeholder={option.input.placeholder}
-                  value={option.input.value || ''}
-                  onChange={option.input.onChange}
-                  disabled={!isChecked}
-                />
+                <div className="radio-input-wrapper">
+                  <input
+                    type="text"
+                    className="radio-input"
+                    placeholder={option.input.placeholder}
+                    value={option.input.value || ''}
+                    onChange={option.input.onChange}
+                    disabled={!isChecked}
+                  />
+                  {option.input.placeholder && <span className="radio-input-suffix">{option.input.placeholder}</span>}
+                </div>
               )}
             </label>
           );
