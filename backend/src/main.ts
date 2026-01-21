@@ -4,15 +4,15 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // CORS for FE on Vercel (or local dev). Keep it permissive unless you want to lock it down.
   app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN?.split(',').map((item) => item.trim()).filter(Boolean) || true,
+    origin: true,
     credentials: true,
   });
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  // eslint-disable-next-line no-console
-  console.log(`Backend is running on http://localhost:${port}`);
+  const port = process.env.PORT ? Number(process.env.PORT) : 3001;
+  await app.listen(port, '0.0.0.0');
 }
 
 bootstrap();
+

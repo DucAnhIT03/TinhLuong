@@ -1,84 +1,83 @@
 import React, { useEffect, useState } from 'react';
+import { salaryApi } from '../../../services/salaryApi.js';
 import { formatCurrency } from '../../../shared/utils/salary.utils.js';
 import SalaryInput from '../components/SalaryInput.jsx';
 import RadioGroup from '../components/RadioGroup.jsx';
-import { salaryApi } from '../../../services/salaryApi.js';
 import './SalaryCalculationPage.css';
 
 const SalaryCalculationPage = () => {
   const [meta, setMeta] = useState(null);
-  const [metaLoading, setMetaLoading] = useState(true);
+  const [metaError, setMetaError] = useState('');
+  const [loadingMeta, setLoadingMeta] = useState(false);
   const [regulation, setRegulation] = useState('');
   const [income, setIncome] = useState('');
   const [dependents, setDependents] = useState('');
   const [insuranceType, setInsuranceType] = useState('official');
   const [customInsuranceSalary, setCustomInsuranceSalary] = useState('');
-  const [region, setRegion] = useState('');
+  const [region, setRegion] = useState('I');
   const [calculationResult, setCalculationResult] = useState(null);
   const [calculationType, setCalculationType] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [calculating, setCalculating] = useState(false);
 
   useEffect(() => {
-    const loadMeta = async () => {
+    const fetchMeta = async () => {
+      setLoadingMeta(true);
+      setMetaError('');
       try {
-        setMetaLoading(true);
         const data = await salaryApi.getMeta();
         setMeta(data);
-        const defaultReg = data?.regulations?.FROM_2026_01_01?.value
-          ?? Object.values(data?.regulations || {})[0]?.value
-          ?? '';
-        const defaultRegion = data?.regions?.[0] ?? '';
-        setRegulation(defaultReg);
-        setRegion(defaultRegion);
+        if (data?.regulations) {
+          const values = Object.values(data.regulations);
+          if (values.length && values[values.length - 1]?.value) {
+            setRegulation(values[values.length - 1].value);
+          }
+        }
+        if (data?.regions?.length) {
+          setRegion(data.regions[0]);
+        }
       } catch (err) {
-        setError(err?.message || 'Không tải được cấu hình lương');
+        setMetaError(err?.message || 'Không tải được cấu hình lương. Vui lòng thử lại.');
       } finally {
-        setMetaLoading(false);
+        setLoadingMeta(false);
       }
     };
 
-    loadMeta();
+    fetchMeta();
   }, []);
 
-  const handleCalculateGrossToNet = async () => {
+  const handleCalculateGrossToNet = () => {
     const grossValue = parseFloat(income) || 0;
     const dependentsCount = parseInt(dependents) || 0;
-    const insuranceSalaryValue = insuranceType === 'official' 
-      ? grossValue 
-      : parseFloat(customInsuranceSalary) || grossValue;
+    const insuranceSalaryValue =
+      insuranceType === 'official' ? grossValue : parseFloat(customInsuranceSalary) || grossValue;
 
     if (grossValue <= 0) {
       alert('Vui lòng nhập thu nhập hợp lệ');
       return;
     }
 
-    try {
-      setLoading(true);
-      setError('');
-      const result = await salaryApi.calculateGrossToNet({
+    setCalculating(true);
+    salaryApi
+      .calculateGrossToNet({
         grossSalary: grossValue,
         insuranceSalary: insuranceSalaryValue,
         dependents: dependentsCount,
-        regulation,
-        region,
-      });
-      setCalculationResult(result);
-      setCalculationType('gross-to-net');
-    } catch (err) {
-      setError(err?.message || 'Không thể tính toán. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
+      })
+      .then((result) => {
+        setCalculationResult(result);
+        setCalculationType('gross-to-net');
+      })
+      .catch((err) => {
+        alert(err?.message || 'Tính toán thất bại');
+      })
+      .finally(() => setCalculating(false));
   };
 
-  const handleCalculateNetToGross = async () => {
+  const handleCalculateNetToGross = () => {
     const netValue = parseFloat(income) || 0;
     const dependentsCount = parseInt(dependents) || 0;
     const useGrossAsInsuranceBase = insuranceType === 'official';
-    const insuranceSalaryValue = useGrossAsInsuranceBase
-      ? 0
-      : parseFloat(customInsuranceSalary) || 0;
+    const insuranceSalaryValue = useGrossAsInsuranceBase ? 0 : parseFloat(customInsuranceSalary) || 0;
 
     if (netValue <= 0) {
       alert('Vui lòng nhập thu nhập hợp lệ');
@@ -90,24 +89,22 @@ const SalaryCalculationPage = () => {
       return;
     }
 
-    try {
-      setLoading(true);
-      setError('');
-      const result = await salaryApi.calculateNetToGross({
+    setCalculating(true);
+    salaryApi
+      .calculateNetToGross({
         netSalary: netValue,
         insuranceSalary: insuranceSalaryValue,
         dependents: dependentsCount,
         useGrossAsInsuranceBase,
-        regulation,
-        region,
-      });
-      setCalculationResult(result);
-      setCalculationType('net-to-gross');
-    } catch (err) {
-      setError(err?.message || 'Không thể tính toán. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
+      })
+      .then((result) => {
+        setCalculationResult(result);
+        setCalculationType('net-to-gross');
+      })
+      .catch((err) => {
+        alert(err?.message || 'Tính toán thất bại');
+      })
+      .finally(() => setCalculating(false));
   };
 
   const handleIncomeChange = (e) => {
@@ -124,6 +121,23 @@ const SalaryCalculationPage = () => {
     setCustomInsuranceSalary(rawValue);
   };
 
+  if (!loadingMeta && metaError) {
+    return (
+      <div className="salary-calculation-page">
+        <div className="salary-calculation-container">
+          <h1 className="page-title">Công cụ tính lương Gross sang Net và ngược lại [Chuẩn 2026]</h1>
+          <div className="error-box">{metaError}</div>
+        </div>
+      </div>
+    );
+  }
+
+  const baseSalary = meta?.baseSalary ?? 0;
+  const personalDeduction = meta?.personalDeduction ?? 0;
+  const dependentDeduction = meta?.dependentDeduction ?? 0;
+  const regions = meta?.regions ?? [];
+  const regulations = meta?.regulations ?? {};
+
   return (
     <div className="salary-calculation-page">
       <div className="salary-calculation-container">
@@ -131,26 +145,16 @@ const SalaryCalculationPage = () => {
           Công cụ tính lương Gross sang Net và ngược lại [Chuẩn 2026]
         </h1>
 
-        {metaLoading && <div className="regulation-warning">Đang tải cấu hình lương...</div>}
-        {!metaLoading && !meta && (
-          <div className="regulation-warning">Không tải được cấu hình lương. Vui lòng thử lại.</div>
-        )}
-        {error && <div className="regulation-warning">{error}</div>}
-
-        {meta && (
-          <div className="regulation-section">
-            <RadioGroup
-              label="Áp dụng quy định:"
-              name="regulation"
-              options={Object.values(meta.regulations || {}).map((r) => ({
-                label: r.label,
-                value: r.value,
-              }))}
-              value={regulation}
-              onChange={(e) => setRegulation(e.target.value)}
-            />
-          </div>
-        )}
+        <div className="regulation-section">
+          <RadioGroup
+            label="Áp dụng quy định:"
+            name="regulation"
+            options={Object.values(regulations).map((r) => ({ label: r.label, value: r.value }))}
+            value={regulation}
+            onChange={(e) => setRegulation(e.target.value)}
+            disabled={loadingMeta}
+          />
+        </div>
 
         <div className="regulation-info">
           <p>
@@ -167,22 +171,20 @@ const SalaryCalculationPage = () => {
           </p>
         </div>
 
-        {meta && (
-          <div className="fixed-info-section">
-            <div className="fixed-info-item">
-              <span className="fixed-info-label">Lương cơ sở:</span>
-              <span className="fixed-info-value">{formatCurrency(meta.baseSalary)}₫</span>
-            </div>
-            <div className="fixed-info-item">
-              <span className="fixed-info-label">Giảm trừ gia cảnh bản thân:</span>
-              <span className="fixed-info-value">{formatCurrency(meta.personalDeduction)}₫</span>
-            </div>
-            <div className="fixed-info-item">
-              <span className="fixed-info-label">Người phụ thuộc:</span>
-              <span className="fixed-info-value">{formatCurrency(meta.dependentDeduction)}₫</span>
-            </div>
+        <div className="fixed-info-section">
+          <div className="fixed-info-item">
+            <span className="fixed-info-label">Lương cơ sở:</span>
+            <span className="fixed-info-value">{formatCurrency(baseSalary)}₫</span>
           </div>
-        )}
+          <div className="fixed-info-item">
+            <span className="fixed-info-label">Giảm trừ gia cảnh bản thân:</span>
+            <span className="fixed-info-value">{formatCurrency(personalDeduction)}₫</span>
+          </div>
+          <div className="fixed-info-item">
+            <span className="fixed-info-label">Người phụ thuộc:</span>
+            <span className="fixed-info-value">{formatCurrency(dependentDeduction)}₫</span>
+          </div>
+        </div>
 
         <div className="input-section">
           <div className="input-row">
@@ -227,32 +229,23 @@ const SalaryCalculationPage = () => {
           />
         </div>
 
-        {meta && (
-          <div className="region-section">
-            <RadioGroup
-              label="Vùng: (Giải thích)"
-              name="region"
-              horizontal={true}
-              options={(meta.regions || []).map((r) => ({ label: r, value: r }))}
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-            />
-          </div>
-        )}
+        <div className="region-section">
+          <RadioGroup
+            label="Vùng: (Giải thích)"
+            name="region"
+            horizontal={true}
+            options={regions.map((r) => ({ label: r, value: r }))}
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+            disabled={loadingMeta}
+          />
+        </div>
 
         <div className="action-buttons">
-          <button
-            className="calculate-button gross-to-net"
-            onClick={handleCalculateGrossToNet}
-            disabled={loading || metaLoading || !meta}
-          >
+          <button className="calculate-button gross-to-net" onClick={handleCalculateGrossToNet} disabled={loadingMeta || calculating}>
             GROSS → NET
           </button>
-          <button
-            className="calculate-button net-to-gross"
-            onClick={handleCalculateNetToGross}
-            disabled={loading || metaLoading || !meta}
-          >
+          <button className="calculate-button net-to-gross" onClick={handleCalculateNetToGross} disabled={loadingMeta || calculating}>
             NET → GROSS
           </button>
         </div>

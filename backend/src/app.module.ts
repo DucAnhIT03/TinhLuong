@@ -9,3 +9,4 @@ import { SalaryModule } from './modules/salary/salary.module';
   providers: [AppService],
 })
 export class AppModule {}
+
